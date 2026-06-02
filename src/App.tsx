@@ -31,7 +31,9 @@ export default function App() {
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (firebaseUser) => {
       setUser(firebaseUser);
-      if (!firebaseUser) {
+      if (firebaseUser) {
+        setAuthLoading(true);
+      } else {
         setUserDoc(null);
         setAuthLoading(false);
       }
