@@ -53,13 +53,20 @@ export default function App() {
       return;
     }
 
-    const unsubscribeUserDoc = subscribeToUserData(
+    console.log("Inicializando suscripción a Firestore para el usuario:", user.uid);
+
+    let unsubscribe: () => void = () => {};
+    
+    unsubscribe = subscribeToUserData(
       user.uid, 
       async (data) => {
         if (!data) {
-          // Si ya estamos intentando crear el usuario, abortar para prevenir bucles
-          if (creatingUserRef.current) return;
+          if (creatingUserRef.current) {
+            console.log("Creación de usuario ya en proceso. Abortando duplicado.");
+            return;
+          }
           
+          console.log("Usuario no existe en Firestore. Iniciando creación...");
           creatingUserRef.current = true;
           try {
             await ensureUserDoc(user);
@@ -67,22 +74,30 @@ export default function App() {
             console.error("Error al auto-crear usuario en Firestore:", err);
             setFirestoreError(err.message || String(err));
             setAuthLoading(false);
+            console.log("Desuscribiendo de Firestore por error en creación...");
+            unsubscribe(); // Detener el escuchador
           }
         } else {
+          console.log("Perfil de usuario cargado con éxito.");
           setUserDoc(data);
           setFirestoreError(null);
           setAuthLoading(false);
-          creatingUserRef.current = false; // Resetear tras lectura exitosa
+          creatingUserRef.current = false;
         }
       },
       (err) => {
-        console.error("Error al suscribirse al documento del usuario:", err);
+        console.error("Error en el listener de Firestore:", err);
         setFirestoreError(err.message || String(err));
         setAuthLoading(false);
+        console.log("Desuscribiendo de Firestore por error en el listener...");
+        unsubscribe(); // Detener el escuchador
       }
     );
 
-    return () => unsubscribeUserDoc();
+    return () => {
+      console.log("Limpiando suscripción a Firestore...");
+      unsubscribe();
+    };
   }, [user]);
 
   const handleLogout = async () => {
