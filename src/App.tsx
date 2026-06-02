@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
 import type { User } from 'firebase/auth';
 import { 
@@ -28,6 +28,9 @@ export default function App() {
   const [authLoading, setAuthLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'status' | 'family' | 'info'>('status');
 
+  // Ref para evitar bucles de reintento si falla por permisos
+  const creatingUserRef = useRef(false);
+
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (firebaseUser) => {
       setUser(firebaseUser);
@@ -46,6 +49,7 @@ export default function App() {
   useEffect(() => {
     if (!user) {
       setFirestoreError(null);
+      creatingUserRef.current = false;
       return;
     }
 
@@ -53,7 +57,10 @@ export default function App() {
       user.uid, 
       async (data) => {
         if (!data) {
-          // El documento no existe todavía en Firestore (por ejemplo, en un inicio de sesión persistente anterior)
+          // Si ya estamos intentando crear el usuario, abortar para prevenir bucles
+          if (creatingUserRef.current) return;
+          
+          creatingUserRef.current = true;
           try {
             await ensureUserDoc(user);
           } catch (err: any) {
@@ -65,6 +72,7 @@ export default function App() {
           setUserDoc(data);
           setFirestoreError(null);
           setAuthLoading(false);
+          creatingUserRef.current = false; // Resetear tras lectura exitosa
         }
       },
       (err) => {
