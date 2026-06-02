@@ -1,0 +1,31 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Reglas para la colección de usuarios
+    match /users/{userId} {
+      // Un usuario autenticado puede leer su propio perfil, o el de otros si comparten el mismo groupId
+      allow read: if request.auth != null && (
+        request.auth.uid == userId || 
+        resource == null || 
+        resource.data.groupId == null ||
+        resource.data.groupId == get(/databases/$(database)/documents/users/$(request.auth.uid)).data.groupId
+      );
+      
+      // Un usuario solo puede escribir en su propio perfil
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Reglas para la colección de grupos familiares
+    match /groups/{groupId} {
+      // Cualquier usuario autenticado puede leer o buscar grupos (ej: al unirse con código)
+      allow read: if request.auth != null;
+      
+      // Cualquier usuario autenticado puede crear un grupo
+      allow create: if request.auth != null;
+      
+      // Solo el creador del grupo puede actualizarlo o eliminarlo
+      allow update, delete: if request.auth != null && resource.data.createdBy == request.auth.uid;
+    }
+  }
+}
