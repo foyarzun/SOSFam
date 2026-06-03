@@ -2,6 +2,26 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
+    <script>
+      // Capturador de errores global para diagnosticar fallas de JS en dispositivos móviles
+      window.addEventListener('error', function(e) {
+        var errorDiv = document.createElement('div');
+        errorDiv.style.position = 'fixed';
+        errorDiv.style.top = '0';
+        errorDiv.style.left = '0';
+        errorDiv.style.width = '100%';
+        errorDiv.style.background = '#ef4444';
+        errorDiv.style.color = '#fff';
+        errorDiv.style.padding = '20px';
+        errorDiv.style.zIndex = '999999';
+        errorDiv.style.fontFamily = 'monospace';
+        errorDiv.style.fontSize = '12px';
+        errorDiv.style.whiteSpace = 'pre-wrap';
+        errorDiv.style.boxShadow = '0 4px 10px rgba(0,0,0,0.5)';
+        errorDiv.innerText = 'Error de Carga: ' + e.message + '\nArchivo: ' + e.filename + '\nLínea: ' + e.lineno;
+        document.body.appendChild(errorDiv);
+      });
+    </script>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>SOSFam - Red de Bienestar Familiar para Emergencias</title>
